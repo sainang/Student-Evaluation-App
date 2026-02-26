@@ -2,13 +2,10 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
-import time  
+import time 
 
 # 1. Basic Config
 st.set_page_config(page_title="Peer Evaluation", page_icon="👥", layout="wide")
-
-# 2. Teacher Password
-ADMIN_PASSWORD = "123321" 
 
 # 3. Data Mapping
 GROUP_TOPICS = {
@@ -47,7 +44,8 @@ num = st.number_input("How many members (including yourself)?", 1, 12, 1)
 
 all_evals = []
 for i in range(int(num)):
-    label = f"Member #{i+1} (Your Self-Evaluation)" if i == 0 else f"Member #{i+1} (Teammate)"
+    is_self = (i == 0)
+    label = f"Member #{i+1} (Your Self-Evaluation)" if is_self else f"Member #{i+1} (Teammate)"
     with st.expander(label, expanded=True):
         t_id = st.text_input(f"Student ID for {label}", key=f"t_id_{i}").strip()
         st.write("Criteria Scoring (0-20):")
@@ -95,15 +93,15 @@ if st.button("🚀 Submit All", use_container_width=True):
                     df = df[~mask]
                 df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
             
-            # 保存到 CSV
             df.to_csv(DATA_FILE, index=False)
             
-            st.balloons() 
-            st.success("Submitted successfully! The page will refresh in 3 seconds.")
+            st.balloons()
+            st.success("🎉 SUBMISSION SUCCESSFUL! Your evaluations have been recorded.")
             
-            time.sleep(3) 
-            st.rerun()     
-
+            time.sleep(6)
+            st.rerun()
+# 2. Teacher Password
+ADMIN_PASSWORD = "123321" 
 # 9. Admin Dashboard
 st.write("---")
 if st.checkbox("Teacher's Dashboard"):
@@ -114,3 +112,4 @@ if st.checkbox("Teacher's Dashboard"):
             st.write("Average Scores:")
             st.table(data.groupby("Groupmembers_ID")["Total_Score"].mean())
             st.download_button("Download CSV", data.to_csv(index=False).encode('utf-8-sig'), "results.csv")
+            
