@@ -3,13 +3,14 @@ import pandas as pd
 from datetime import datetime
 import os
 
-# --- 页面配置 ---
+# --- Page Configuration ---
 st.set_page_config(page_title="Peer Evaluation", page_icon="👥", layout="wide")
 
-# --- 管理员密码 ---
-ADMIN_PASSWORD = "YourNewSecurePassword789" 
+# --- Security: Get password from Streamlit Secrets ---
+# Replace your old hardcoded password with this:
+ADMIN_PASSWORD = st.secrets["teacher_password"]
 
-# --- 小组与主题对应表 ---
+# --- Group & Topic Mapping ---
 GROUP_TOPICS = {
     "Group 01": "Tesla", "Group 02": "Zara", "Group 03": "McDonald’s",
     "Group 04": "Starbucks", "Group 05": "Walmart", "Group 06": "Apple",
@@ -17,7 +18,7 @@ GROUP_TOPICS = {
     "Group 10": "NVIDIA", "Group 11": "Microsoft", "Group 12": "Grab"
 }
 
-# --- 评分维度 ---
+# --- Scoring Dimensions ---
 DIMENSIONS = {
     "Crit1_Contribution": "Contribution",
     "Crit2_Quality": "Quality",
@@ -28,7 +29,7 @@ DIMENSIONS = {
 
 DATA_FILE = "evaluation_data.csv"
 
-# --- 数据读取函数 (强制学号为字符串) ---
+# --- Data Loading (Force IDs as String) ---
 def load_data():
     if os.path.exists(DATA_FILE):
         df = pd.read_csv(DATA_FILE, encoding='utf-8', dtype={'Evaluator_ID': str, 'Groupmembers_ID': str})
@@ -36,19 +37,19 @@ def load_data():
     return pd.DataFrame()
 
 st.title("👨‍🏫 Group Peer Evaluation System")
-st.markdown("Scores update in real-time. New submissions overwrite previous ones for the same person.")
+st.markdown("Scores update in real-time. New submissions overwrite previous ones for the same target.")
 
-# --- 第一步：评价人信息 ---
+# --- Step 1: Evaluator Information ---
 st.subheader("Step 1: Your Information")
 col_a, col_b = st.columns(2)
 with col_a:
-    my_id = st.text_input("Your Student ID (Evaluator)").strip() # 自动去空格
+    my_id = st.text_input("Your Student ID (Evaluator)").strip() # Auto-trim whitespace
 with col_b:
     group_no = st.selectbox("Your Group No.", list(GROUP_TOPICS.keys()))
     selected_topic = GROUP_TOPICS[group_no]
     st.info(f"Topic: **{selected_topic}**")
 
-# --- 第二步：评分详情 ---
+# --- Step 2: Evaluation Details ---
 st.write("---")
 st.subheader("Step 2: Evaluation Details")
 num_members = st.number_input("How many group members (including yourself) are you evaluating?", 1, 12, 1)
@@ -59,26 +60,26 @@ for i in range(int(num_members)):
     label = f"Member #{i+1} (Self-Eval)" if is_self else f"Member #{i+1} (Teammate)"
     
     with st.expander(label, expanded=True):
-        t_id = st.text_input(f"Student ID for {label}", key=f"id_{i}").strip() # 自动去空格
+        t_id = st.text_input(f"Student ID for {label}", key=f"id_{i}").strip() 
         
         st.write("Scoring (0-20 per item):")
         c_scores = {}
         cols = st.columns(5)
         for idx, backend_id in enumerate(DIMENSIONS.keys()):
             with cols[idx]:
-                score = st.slider(f"{backend_id}", 0, 20, 15, key=f"score_{i}_{idx}")
+                score = st.slider(f"{DIMENSIONS[backend_id]}", 0, 20, 15, key=f"score_{i}_{idx}")
                 c_scores[backend_id] = score
         
         total = sum(c_scores.values())
         if total <= 50:
-            st.error(f"**Total: {total}/100** (Remark Required! ⚠️)")
+            st.error(f"**Total: {total}/100** (Remark and justification required! ⚠️)")
         else:
             st.success(f"**Total: {total}/100**")
             
-        remark = st.text_area(f"Remarks for {label}", key=f"remark_{i}")
+        remark = st.text_area(f"Remarks for {label}", key=f"remark_{i}", placeholder="Mandatory if total score ≤ 50")
         all_evaluations.append({"target_id": t_id, "scores": c_scores, "total": total, "remark": remark})
 
-# --- 第三步：提交与覆盖逻辑 ---
+# --- Step 3: Submission & Overwrite Logic ---
 st.write("---")
 if st.button("🚀 Submit All Evaluations", use_container_width=True):
     if not my_id:
@@ -96,7 +97,7 @@ if st.button("🚀 Submit All Evaluations", use_container_width=True):
                 valid_to_submit = False
                 break
             if item["total"] <= 50 and not item["remark"].strip():
-                st.error(f"Remark needed for {item['target_id']}!")
+                st.error(f"Remark needed for {item['target_id']} (Total ≤ 50)!")
                 valid_to_submit = False
                 break
                 
@@ -114,11 +115,11 @@ if st.button("🚀 Submit All Evaluations", use_container_width=True):
         if valid_to_submit:
             for entry in new_entries:
                 if not df.empty:
-                    # 精准匹配：同一个评价者，在同一个组，评价同一个组员
+                    # Match by Evaluator, Group, and Target Member
                     mask = (df['Evaluator_ID'] == entry['Evaluator_ID']) & \
                            (df['Groupmembers_ID'] == entry['Groupmembers_ID'])
                     if mask.any():
-                        df = df[~mask] # 删掉旧的
+                        df = df[~mask] # Remove old record
                 df = pd.concat([df, pd.DataFrame([entry])], ignore_index=True)
             
             df.to_csv(DATA_FILE, index=False)
@@ -126,20 +127,19 @@ if st.button("🚀 Submit All Evaluations", use_container_width=True):
             st.success("Submitted successfully! Records updated.")
             st.rerun()
 
-# --- 教师后台 ---
+# --- Admin Dashboard ---
 st.write("---")
 if st.checkbox("Teacher's Dashboard"):
-    pwd = st.text_input("Password", type="password")
+    pwd = st.text_input("Enter Admin Password", type="password")
     if pwd == ADMIN_PASSWORD:
         data = load_data()
         if not data.empty:
             st.subheader("Results Summary")
-            # 确保 Total_Score 是数值型再计算平均值
             data['Total_Score'] = pd.to_numeric(data['Total_Score'])
             summary = data.groupby("Groupmembers_ID")["Total_Score"].mean().reset_index()
             summary.columns = ["Student ID", "Average Score"]
-            st.table(summary) # 使用 table 显示更清晰
+            st.table(summary) 
             
             st.write("Full Records:")
             st.dataframe(data)
-            st.download_button("Download CSV", data.to_csv(index=False).encode('utf-8-sig'), "final.csv")
+            st.download_button("Download CSV", data.to_csv(index=False).encode('utf-8-sig'), "final_results.csv")
