@@ -63,7 +63,7 @@ DIMENSIONS = ["Contribution", "Quality", "Collaboration", "Innovation", "Respons
 all_evals = []
 for i in range(int(num)):
     is_self = (i == 0)
-    label = f"Member #{i+1} (Your Self-Evaluation)" if is_self else f"Member #{i+1} (Teammates Evaluation)"
+    label = f"**Member #{i+1} (Your Self-Evaluation)**" if is_self else f"**Member #{i+1} (Teammates Evaluation)**"
     with st.expander(label, expanded=True):
         t_id = st.text_input(f"Student ID for {label}", key=f"t_id_{i}").strip()
         st.write("Scoring (😠 0 — 20 😊):")
