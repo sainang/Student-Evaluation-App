@@ -36,8 +36,13 @@ st.warning("""
 """)
 
 st.info("""
-**Note:** New submissions overwrite previous ones for the same target person.
-**Criteria:** Contribution, Quality, Collaboration, Innovation, Responsibility (0-20 each).
+**Notice:** New submissions overwrite previous ones for the same target person.
+**Criteria:** 1.Contribution, 2.Quality, 3.Collaboration, 4.Innovation, 5.Responsibility (0-20 each).
+* **1:** Active involvement in discussions and timely completion of assigned tasks.
+* **2:** Accuracy and depth of the work, demonstrating high-quality output.
+* **3:** Willingness to listen, effective communication during conflicts, and team spirit.
+* **4:** Providing unique insights, novel ideas, or constructive suggestions.
+* **5:** Taking initiative on difficult tasks and driving progress when behind schedule.
 """)
 
 # 6. Step 1: Evaluator Info
@@ -71,11 +76,11 @@ for i in range(int(num)):
         
         total = sum(scores.values())
         if total <= 50:
-            st.error(f"**Total: {total}/100** (Justification required! ⚠️)")
+            st.error(f"**Current Total: {total}/100** ⚠️ (Remark and justification are REQUIRED for scores ≤ 50!)")
         else:
             st.success(f"**Total: {total}/100**")
         
-        remark = st.text_area(f"Remarks for {label}", key=f"r_{i}", placeholder="Explain score justification here...")
+        remark = st.text_area(f"Remarks for {label}", key=f"r_{i}", placeholder="If score is ≤ 50, explain WHY here (mandatory).")
         all_evals.append({"id": t_id, "scores": scores, "total": total, "remark": remark})
 
 # 8. Step 3: Submission Logic
