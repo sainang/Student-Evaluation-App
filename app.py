@@ -65,7 +65,7 @@ for i in range(int(num)):
         
         total = sum(scores.values())
         if total <= 50:
-            st.error(f"Current Total: {total}/100 (Justification required! ⚠️)")
+            st.error(f"**Current Total: {total}/100** ⚠️ (Remark and detailed justification are REQUIRED for scores ≤ 50!)")
         else:
             st.success(f"Current Total: {total}/100")
         
