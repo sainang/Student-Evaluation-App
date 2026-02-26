@@ -4,12 +4,12 @@ from datetime import datetime
 import os
 
 # --- Page Configuration ---
-st.set_page_config(page_title="Real-time Group Evaluation", page_icon="👥", layout="wide")
+st.set_page_config(page_title="Group Peer Evaluation", page_icon="👥", layout="wide")
 
-# --- Security ---
+# --- Security: Set your new password here ---
 ADMIN_PASSWORD = "YourNewSecurePassword789" 
 
-# --- Data ---
+# --- Group & Topic Data ---
 GROUP_TOPICS = {
     "Group 01": "Tesla", "Group 02": "Zara", "Group 03": "McDonald’s",
     "Group 04": "Starbucks", "Group 05": "Walmart", "Group 06": "Apple",
@@ -17,6 +17,7 @@ GROUP_TOPICS = {
     "Group 10": "NVIDIA", "Group 11": "Microsoft", "Group 12": "Grab"
 }
 
+# --- Mapping: Criteria ---
 DIMENSIONS = {
     "Criterion 1 Contribution & Participation": "Crit1_Contribution",
     "Criterion 2 Professionalism & Quality": "Crit2_Quality",
@@ -48,12 +49,20 @@ with col_b:
 # --- Step 2: Evaluation Details ---
 st.write("---")
 st.subheader("Step 2: Evaluation Details")
-num_members = st.number_input("How many group members (including yourself)?", min_value=1, max_value=12, value=1)
+
+num_members = st.number_input(
+    "How many group members (including yourself) are you evaluating?", 
+    min_value=1, max_value=12, value=1
+)
 
 all_evaluations = []
 
 for i in range(int(num_members)):
-    label = f"Member #{i+1} (Self)" if i == 0 else f"Member #{i+1} (Teammate)"
+    if i == 0:
+        label = f"Member #{i+1} (Your Self-Evaluation)"
+    else:
+        label = f"Member #{i+1} (Teammate Evaluation)"
+        
     with st.expander(label, expanded=True):
         col_id, _ = st.columns([1, 2])
         with col_id:
@@ -70,24 +79,26 @@ for i in range(int(num_members)):
         
         member_total = sum(c_scores.values())
         
+        # --- Real-time Logic: Remark and justification required for score <= 50 ---
         if member_total <= 50:
-            st.error(f"**Current Total: {member_total}/100** (Remark Required ⚠️)")
+            st.error(f"**Current Total: {member_total}/100** (Remark and justification are required for scores ≤ 50! ⚠️)")
         else:
             st.success(f"**Current Total: {member_total}/100**")
             
-        t_remark = st.text_area(f"Remarks for {label}", key=f"remark_{i}")
+        t_remark = st.text_area(f"Remarks for {label}", key=f"remark_{i}", 
+                                placeholder="If total score is ≤ 50, you must provide a detailed justification here.")
         
         all_evaluations.append({
             "target_id": t_id, "scores": c_scores, "total": member_total, "remark": t_remark
         })
 
-# --- Step 3: Submission ---
+# --- Step 3: Global Submit ---
 st.write("---")
 if st.button("🚀 Submit All Evaluations", use_container_width=True):
     error_found = False
     
     if not my_id:
-        st.error("Please enter Your Student ID.")
+        st.error("Please enter Your Student ID in Step 1.")
         error_found = True
     
     for idx, item in enumerate(all_evaluations):
@@ -95,7 +106,7 @@ if st.button("🚀 Submit All Evaluations", use_container_width=True):
             st.error(f"Student ID for Member #{idx+1} is missing.")
             error_found = True
         if item["total"] <= 50 and not item["remark"].strip():
-            st.error(f"Remark is required for Member #{idx+1} (Total ≤ 50).")
+            st.error(f"Submission failed: Member #{idx+1} has a score ≤ 50. A remark and justification are mandatory.")
             error_found = True
             
     if not error_found:
@@ -118,10 +129,10 @@ if st.button("🚀 Submit All Evaluations", use_container_width=True):
         df.to_csv(DATA_FILE, index=False)
         
         st.balloons()
-        st.success("Successfully submitted! The data is now safe in the cloud.")
+        st.success(f"Successfully submitted all evaluations! Dashboard updated.")
         st.rerun()
 
-# --- Admin Dashboard (Remaining the same) ---
+# --- Admin Dashboard ---
 st.write("---")
 if st.checkbox("Teacher's Dashboard"):
     pwd = st.text_input("Enter Admin Password", type="password")
@@ -130,5 +141,13 @@ if st.checkbox("Teacher's Dashboard"):
         if not data.empty:
             st.subheader("Real-time Summary")
             summary = data.groupby("Groupmembers_ID")["Total_Score"].mean().reset_index()
+            summary.columns = ["Student ID", "Average Score"]
             st.dataframe(summary, use_container_width=True)
-            st.download_button("📥 Download Records", data.to_csv(index=False).encode('utf-8-sig'), "results.csv")
+            
+            st.write("Recent Submissions (Last 10):")
+            st.dataframe(data.tail(10), use_container_width=True)
+            
+            csv_data = data.to_csv(index=False).encode('utf-8-sig')
+            st.download_button("📥 Download Final Results (CSV)", csv_data, "evaluation_results.csv", "text/csv")
+        else:
+            st.info("No records found yet.")
