@@ -3,13 +3,13 @@ import pandas as pd
 from datetime import datetime
 import os
 
-# --- Page Configuration ---
+# 1. Basic Config
 st.set_page_config(page_title="Peer Evaluation", page_icon="👥", layout="wide")
 
-# --- Teacher Dashboard Password ---
+# 2. Teacher Password
 ADMIN_PASSWORD = "123321" 
 
-# --- Group & Topic Mapping ---
+# 3. Data Mapping
 GROUP_TOPICS = {
     "Group 01": "Tesla", "Group 02": "Zara", "Group 03": "McDonald’s",
     "Group 04": "Starbucks", "Group 05": "Walmart", "Group 06": "Apple",
@@ -17,134 +17,94 @@ GROUP_TOPICS = {
     "Group 10": "NVIDIA", "Group 11": "Microsoft", "Group 12": "Grab"
 }
 
-# --- Scoring Criteria ---
-DIMENSIONS = {
-    "Crit1_Contribution": "Contribution",
-    "Crit2_Quality": "Quality",
-    "Crit3_Collaboration": "Collaboration",
-    "Crit4_Innovation": "Innovation",
-    "Crit5_Responsibility": "Responsibility"
-}
-
+DIMENSIONS = ["Contribution", "Quality", "Collaboration", "Innovation", "Responsibility"]
 DATA_FILE = "evaluation_data.csv"
 
-# --- Data Loading ---
+# 4. Helper Function
 def load_data():
     if os.path.exists(DATA_FILE):
-        df = pd.read_csv(DATA_FILE, encoding='utf-8', dtype={'Evaluator_ID': str, 'Groupmembers_ID': str})
-        return df
+        return pd.read_csv(DATA_FILE, dtype={'Evaluator_ID': str, 'Groupmembers_ID': str})
     return pd.DataFrame()
 
+# 5. UI - Header
 st.title("👨‍🏫 Group Peer Evaluation System")
-st.markdown("Scores update in real-time. New submissions overwrite previous ones for the same target.")
+st.info("New submissions overwrite previous ones for the same person.")
 
-# --- Step 1: Evaluator Information ---
+# 6. Step 1: Evaluator
 st.subheader("Step 1: Your Information")
-col_a, col_b = st.columns(2)
-with col_a:
+col1, col2 = st.columns(2)
+with col1:
     my_id = st.text_input("Your Student ID (Evaluator)").strip()
-with col_b:
+with col2:
     group_no = st.selectbox("Your Group No.", list(GROUP_TOPICS.keys()))
-    selected_topic = GROUP_TOPICS[group_no]
-    st.info(f"Topic: **{selected_topic}**")
+    st.info(f"Topic: **{GROUP_TOPICS[group_no]}**")
 
-# --- Step 2: Evaluation Details ---
+# 7. Step 2: Details
 st.write("---")
 st.subheader("Step 2: Evaluation Details")
-num_members = st.number_input("How many group members (including yourself) are you evaluating?", 1, 12, 1)
+num = st.number_input("How many members (including yourself)?", 1, 12, 1)
 
-all_evaluations = []
-for i in range(int(num_members)):
-    is_self = (i == 0)
-    # 更新后的标签文案
-    section_label = f"Member #{i+1} (Your Self-Evaluation)" if is_self else f"Member #{i+1} (Teammate Evaluation)"
-    
-    with st.expander(section_label, expanded=True):
-        # 更新后的输入框标签
-        t_id = st.text_input(f"Student ID for {section_label}", key=f"id_{i}").strip() 
-        
-        # 更新后的评分标题
+all_evals = []
+for i in range(int(num)):
+    label = f"Member #{i+1} (Your Self-Evaluation)" if i == 0 else f"Member #{i+1} (Teammate)"
+    with st.expander(label, expanded=True):
+        t_id = st.text_input(f"Student ID for {label}", key=f"t_id_{i}").strip()
         st.write("Criteria Scoring (0-20):")
-        c_scores = {}
+        scores = {}
         cols = st.columns(5)
-        for idx, (backend_id, display_name) in enumerate(DIMENSIONS.items()):
+        for idx, name in enumerate(DIMENSIONS):
             with cols[idx]:
-                score = st.slider(f"{display_name}", 0, 20, 15, key=f"score_{i}_{idx}")
-                c_scores[backend_id] = score
+                s = st.slider(name, 0, 20, 15, key=f"s_{i}_{idx}")
+                scores[name] = s
         
-        member_total = sum(c_scores.values())
-        
-        # 更新为 "Current Total" 及其强制备注逻辑
-        if member_total <= 50:
-            st.error(f"**Current Total: {member_total}/100** (Remark and justification are required for scores ≤ 50! ⚠️)")
+        total = sum(scores.values())
+        if total <= 50:
+            st.error(f"Current Total: {total}/100 (Justification required! ⚠️)")
         else:
-            st.success(f"**Current Total: {member_total}/100**")
-            
-        t_remark = st.text_area(f"Remarks for {section_label}", key=f"remark_{i}", placeholder="If total score is ≤ 50, you must provide a detailed justification here.")
-        all_evaluations.append({"target_id": t_id, "scores": c_scores, "total": member_total, "remark": t_remark})
-
-# --- Step 3: Submission ---
-st.write("---")
-if st.button("🚀 Submit All Evaluations", use_container_width=True):
-    if not my_id:
-        st.error("Please enter Your Student ID in Step 1.")
-    else:
-        df = load_data()
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+            st.success(f"Current Total: {total}/100")
         
-        valid_to_submit = True
-        new_entries = []
+        remark = st.text_area(f"Remarks for {label}", key=f"r_{i}")
+        all_evals.append({"id": t_id, "scores": scores, "total": total, "remark": remark})
 
-        for item in all_evaluations:
-            if not item["target_id"]:
-                st.error("One or more Student IDs are missing!")
-                valid_to_submit = False
-                break
-            if item["total"] <= 50 and not item["remark"].strip():
-                st.error(f"Submission failed: A remark and justification are mandatory for scores ≤ 50.")
-                valid_to_submit = False
-                break
-                
-            new_entries.append({
-                "Timestamp": timestamp,
-                "Evaluator_ID": str(my_id),
-                "Group_No": group_no,
-                "Group_Topic": selected_topic,
-                "Groupmembers_ID": str(item["target_id"]),
-                **item["scores"],
-                "Total_Score": item["total"],
-                "Remarks": item["remark"]
-            })
-
-        if valid_to_submit:
-            for entry in new_entries:
+# 8. Step 3: Submit
+st.write("---")
+if st.button("🚀 Submit All", use_container_width=True):
+    if not my_id:
+        st.error("Please enter Your ID!")
+    else:
+        # Validate remarks for low scores
+        valid = True
+        for e in all_evals:
+            if not e["id"]:
+                st.error("Missing Student ID!"); valid = False; break
+            if e["total"] <= 50 and not e["remark"].strip():
+                st.error(f"Remark required for {e['id']} (Score <= 50)!"); valid = False; break
+        
+        if valid:
+            df = load_data()
+            ts = datetime.now().strftime("%Y-%m-%d %H:%M")
+            for e in all_evals:
+                row = {
+                    "Timestamp": ts, "Evaluator_ID": my_id, "Group_No": group_no, 
+                    "Topic": GROUP_TOPICS[group_no], "Groupmembers_ID": e["id"], 
+                    **e["scores"], "Total_Score": e["total"], "Remarks": e["remark"]
+                }
                 if not df.empty:
-                    mask = (df['Evaluator_ID'] == entry['Evaluator_ID']) & \
-                           (df['Groupmembers_ID'] == entry['Groupmembers_ID'])
-                    if mask.any():
-                        df = df[~mask]
-                df = pd.concat([df, pd.DataFrame([entry])], ignore_index=True)
-            
+                    mask = (df['Evaluator_ID'] == my_id) & (df['Groupmembers_ID'] == e['id'])
+                    df = df[~mask]
+                df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
             df.to_csv(DATA_FILE, index=False)
             st.balloons()
-            st.success("Submitted successfully! Records updated.")
+            st.success("Submitted! Restarting...")
             st.rerun()
 
-# --- Admin Dashboard ---
+# 9. Admin Dashboard
 st.write("---")
 if st.checkbox("Teacher's Dashboard"):
-    pwd = st.text_input("Enter Admin Password", type="password")
+    pwd = st.text_input("Password", type="password")
     if pwd == ADMIN_PASSWORD:
         data = load_data()
         if not data.empty:
-            st.subheader("Results Summary (Average Score)")
-            data['Total_Score'] = pd.to_numeric(data['Total_Score'])
-            summary = data.groupby("Groupmembers_ID")["Total_Score"].mean().reset_index()
-            summary.columns = ["Student ID", "Average Score"]
-            st.table(summary) 
-            
-            st.write("Full Records:")
-            st.dataframe(data)
-            st.download_button("📥 Download Final Records (CSV)", data.to_csv(index=False).encode('utf-8-sig'), "evaluation_results.csv")
-        else:
-            st.info("No data submitted yet.")
+            st.write("Average Scores:")
+            st.table(data.groupby("Groupmembers_ID")["Total_Score"].mean())
+            st.download_button("Download CSV", data.to_csv(index=False).encode('utf-8-sig'), "results.csv")
