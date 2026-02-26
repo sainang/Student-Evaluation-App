@@ -37,7 +37,7 @@ st.warning("""
 
 st.info("""
 **Notice:** New submissions overwrite previous ones for the same target person.
-- Criteria:** 1.Contribution, 2.Quality, 3.Collaboration, 4.Innovation, 5.Responsibility (0-20 each).
+Criteria: 1.Contribution, 2.Quality, 3.Collaboration, 4.Innovation, 5.Responsibility (0-20 each).
 * **1:** Active involvement in discussions and timely completion of assigned tasks.
 * **2:** Accuracy and depth of the work, demonstrating high-quality output.
 * **3:** Willingness to listen, effective communication during conflicts, and team spirit.
