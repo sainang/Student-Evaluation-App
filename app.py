@@ -32,7 +32,7 @@ def load_data():
     return pd.DataFrame()
 
 # 5. UI - Header
-st.title("👨‍🏫 Group Peer Evaluation System")
+st.title("👨‍🏫 G0220 Group Self & Peer Evaluation System")
 st.info("New submissions overwrite previous ones for the same target person.")
 
 # 6. Step 1: Evaluator
