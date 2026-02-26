@@ -95,10 +95,10 @@ if st.button("🚀 Submit All", use_container_width=True):
             
             df.to_csv(DATA_FILE, index=False)
             
-            st.balloons()
+            st.balloons(6)
             st.success("🎉 SUBMISSION SUCCESSFUL! Your evaluations have been recorded.")
             
-            time.sleep(6)
+            time.sleep(3)
             st.rerun()
 # 2. Teacher Password
 ADMIN_PASSWORD = "123321" 
