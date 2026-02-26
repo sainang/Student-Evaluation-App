@@ -33,7 +33,16 @@ def load_data():
 
 # 5. UI - Header
 st.title("👨‍🏫 G0220 Group Self & Peer Evaluation System")
-st.info("New submissions overwrite previous ones for the same target person.")
+st.info("""
+**Notice:** New submissions overwrite previous ones for the same target person.
+
+**Grading Criteria Details:**
+* **Contribution:** Active involvement in discussions and timely completion of assigned tasks.
+* **Quality:** Accuracy and depth of the work, demonstrating high-quality output.
+* **Collaboration:** Willingness to listen, effective communication during conflicts, and team spirit.
+* **Innovation:** Providing unique insights, novel ideas, or constructive suggestions.
+* **Responsibility:** Taking initiative on difficult tasks and driving progress when behind schedule.
+""")
 
 # 6. Step 1: Evaluator
 st.subheader("Step 1: Your Information")
@@ -55,7 +64,7 @@ for i in range(int(num)):
     label = f"Member #{i+1} (Your Self-Evaluation)" if is_self else f"Member #{i+1} (Teammate Evaluation)"
     with st.expander(label, expanded=True):
         t_id = st.text_input(f"Student ID for {label}", key=f"t_id_{i}").strip()
-        st.write("Criteria Scoring (0-20):")
+        st.write("Criteria Scoring (😠 0 ———— 20 😊):")
         scores = {}
         cols = st.columns(5)
         for idx, name in enumerate(DIMENSIONS):
