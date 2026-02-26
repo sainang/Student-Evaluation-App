@@ -42,7 +42,7 @@ def load_data():
     return pd.DataFrame()
 
 st.title("👨‍🏫 Group Peer Evaluation System")
-st.markdown("Assess all your teammates at once. Remark is mandatory if total score ≤ 50.")
+st.markdown("Assess your teammates and yourself. **Remark is mandatory if total score ≤ 50.**")
 
 # --- Step 1: Evaluator's Info ---
 st.subheader("Step 1: Your Information")
@@ -50,31 +50,29 @@ col_a, col_b = st.columns(2)
 with col_a:
     my_id = st.text_input("Your Student ID (Evaluator)")
 with col_b:
-    # 学生选择组号
     group_no = st.selectbox("Your Group No.", list(GROUP_TOPICS.keys()))
-    # 根据组号自动获取 Topic
     selected_topic = GROUP_TOPICS[group_no]
     st.info(f"Assigned Topic: **{selected_topic}**")
 
-# --- Step 2: Choose how many members to evaluate ---
+# --- Step 2: Choose number of members ---
 st.write("---")
-st.subheader("Step 2: Evaluate Teammates")
-num_members = st.number_input("How many teammates are you evaluating?", min_value=1, max_value=10, value=1)
+st.subheader("Step 2: Evaluation Details")
+num_members = st.number_input("How many group members (including yourself) are you evaluating?", min_value=1, max_value=12, value=1)
 
 all_evaluations = []
 
 for i in range(int(num_members)):
-    with st.expander(f"Teammate #{i+1}", expanded=True):
+    label = f"Member #{i+1} (can be yourself)" if i == 0 else f"Member #{i+1}"
+    with st.expander(label, expanded=True):
         col_id, col_empty = st.columns([1, 2])
         with col_id:
-            t_id = st.text_input(f"Student ID of Teammate #{i+1}", key=f"id_{i}")
+            t_id = st.text_input(f"Student ID for {label}", key=f"id_{i}")
         
         st.write("Criteria Scoring (0-20):")
         c_scores = {}
         cols = st.columns(5)
         for idx, (display, backend) in enumerate(DIMENSIONS.items()):
             with cols[idx]:
-                # 使用滑动条或数字输入，这里沿用 slider 保证体验，或者按你习惯改回 number_input
                 score = st.slider(f"{backend}", 0, 20, 15, key=f"score_{i}_{idx}")
                 c_scores[backend] = score
         
@@ -86,7 +84,7 @@ for i in range(int(num_members)):
         else:
             st.success(f"Total Score: {total}/100")
             
-        t_remark = st.text_area(f"Remarks for Teammate #{i+1}", key=f"remark_{i}", placeholder="Mandatory if total ≤ 50")
+        t_remark = st.text_area(f"Remarks for {label}", key=f"remark_{i}", placeholder="Mandatory if total ≤ 50")
         
         all_evaluations.append({
             "target_id": t_id,
@@ -101,15 +99,15 @@ st.write("---")
 if st.button("🚀 Submit All Evaluations", use_container_width=True):
     error_found = False
     if not my_id:
-        st.error("Please fill in your Student ID.")
+        st.error("Please fill in your own Student ID in Step 1.")
         error_found = True
     
     for idx, eval_item in enumerate(all_evaluations):
         if not eval_item["target_id"]:
-            st.error(f"Teammate #{idx+1} is missing a Student ID.")
+            st.error(f"Member #{idx+1} is missing a Student ID.")
             error_found = True
         if eval_item["is_low"] and not eval_item["remark"].strip():
-            st.error(f"Teammate #{idx+1} needs a mandatory remark (Total ≤ 50).")
+            st.error(f"Member #{idx+1} needs a mandatory remark (Total ≤ 50).")
             error_found = True
             
     if not error_found:
@@ -120,7 +118,7 @@ if st.button("🚀 Submit All Evaluations", use_container_width=True):
                 "Timestamp": timestamp,
                 "Evaluator_ID": my_id,
                 "Group_No": group_no,
-                "Group_Topic": selected_topic, # 这里自动存入对应的主题
+                "Group_Topic": selected_topic,
                 "Groupmembers_ID": item["target_id"],
                 **item["scores"],
                 "Total_Score": item["total"],
@@ -142,8 +140,9 @@ if st.checkbox("Teacher's Dashboard"):
     if pwd == ADMIN_PASSWORD:
         data = load_data()
         if not data.empty:
-            st.subheader("Real-time Summary")
+            st.subheader("Results Summary (Average of Self & Peer Eval)")
             summary = data.groupby("Groupmembers_ID")["Total_Score"].mean().reset_index()
+            summary.columns = ["Student ID", "Average Total Score"]
             st.dataframe(summary, use_container_width=True)
             
             csv_data = data.to_csv(index=False).encode('utf-8-sig')
