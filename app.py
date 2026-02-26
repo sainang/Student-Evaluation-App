@@ -30,14 +30,13 @@ st.title("👨‍🏫 G0220 Group Self & Peer Evaluation System")
 
 # SECURITY WARNING (The best deterrent)
 st.warning("""
-⚠️ **ACADEMIC INTEGRITY NOTICE:** - Identity impersonation is a serious violation.
-- The system logs **Student IDs, Timestamps, and Submission Patterns**.
-- Any student submitting scores under multiple identities will be flagged automatically.
+⚠️ **ONE-TIME SUBMISSION ONLY:**
+- You can only submit your evaluations **ONCE**. 
+- Modifications are **NOT allowed** after submission. 
+- Identity impersonation is a serious violation of Academic Integrity.
 """)
 
 st.info("""
-**Notice:** New submissions overwrite previous ones for the same target person.
-
 **Criteria:** 1.Contribution, 2.Quality, 3.Collaboration, 4.Innovation, 5.Responsibility (0-20 each).
 * **1:** Active involvement in discussions and timely completion of assigned tasks.
 * **2:** Accuracy and depth of the work, demonstrating high-quality output.
@@ -84,36 +83,48 @@ for i in range(int(num)):
         remark = st.text_area(f"Remarks for {label}", key=f"r_{i}", placeholder="If score is ≤ 50, explain WHY here (mandatory).")
         all_evals.append({"id": t_id, "scores": scores, "total": total, "remark": remark})
 
-# 8. Step 3: Submission Logic
+# 8. Step 3: Submission Logic (With Duplicate ID Check)
 st.write("---")
-if st.button("🚀 Submit All Evaluations", use_container_width=True):
+if st.button("🚀 Final Submit", use_container_width=True):
+    df = load_data()
+    
+    already_submitted = False
+    if not df.empty and my_id in df['Evaluator_ID'].values:
+        already_submitted = True
+
     if not my_id:
         st.error("Please enter Your Student ID!")
+    elif already_submitted:
+        st.error(f"Access Denied: Student ID {my_id} has already submitted. Each student is allowed only one submission.")
     else:
         valid = True
         for e in all_evals:
             if not e["id"]:
                 st.error("Missing Target Student ID!"); valid = False; break
             if e["total"] <= 50 and not e["remark"].strip():
-                st.error(f"Remark required for {e['id']}!"); valid = False; break
+                st.error(f"Remark required for {e['id']} (Score ≤ 50)!"); valid = False; break
         
         if valid:
-            df = load_data()
             ts = datetime.now().strftime("%Y-%m-%d %H:%M")
+            new_rows = []
             for e in all_evals:
                 row = {
-                    "Timestamp": ts, "Evaluator_ID": my_id, "Group_No": group_no, 
-                    "Groupmembers_ID": e["id"], **e["scores"], 
-                    "Total_Score": e["total"], "Remarks": e["remark"]
+                    "Timestamp": ts, 
+                    "Evaluator_ID": my_id, 
+                    "Group_No": group_no, 
+                    "Topic": GROUP_TOPICS[group_no],
+                    "Groupmembers_ID": e["id"], 
+                    **e["scores"], 
+                    "Total_Score": e["total"], 
+                    "Remarks": e["remark"]
                 }
-                if not df.empty:
-                    mask = (df['Evaluator_ID'] == my_id) & (df['Groupmembers_ID'] == e['id'])
-                    df = df[~mask]
-                df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
+                new_rows.append(row)
             
+            df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
             df.to_csv(DATA_FILE, index=False)
+            
             st.balloons()
-            st.success("🎉 SUBMISSION SUCCESSFUL!")
+            st.success("🎉 SUBMISSION SUCCESSFUL! Thank you for your feedback.")
             time.sleep(3)
             st.rerun()
 
@@ -124,14 +135,23 @@ if st.checkbox("Teacher's Dashboard"):
     if pwd == ADMIN_PASSWORD:
         data = load_data()
         if not data.empty:
-            # Audit Section: To catch impersonators
+            # Audit Section: 
             st.subheader("🕵️ Anti-Fraud Audit")
             audit = data.groupby("Evaluator_ID")["Groupmembers_ID"].count().reset_index()
             audit.columns = ["Student ID", "Records Submitted"]
-            st.write("Average students submit 4-6 records. If someone has 20+, they are likely impersonating others.")
+            st.write("Check if any ID has an unusual number of submissions.")
             st.dataframe(audit)
 
             # Data Section
             st.subheader("Full Records")
             st.dataframe(data)
+            
+            # Average Summary Table
+            st.subheader("Results Summary (Average)")
+            avg_scores = data.groupby("Groupmembers_ID")["Total_Score"].mean().reset_index()
+            avg_scores.columns = ["Student ID", "Mean Score"]
+            st.table(avg_scores)
+
             st.download_button("📥 Download Final Results", data.to_csv(index=False).encode('utf-8-sig'), "results.csv")
+        else:
+            st.info("No data submitted yet.")
