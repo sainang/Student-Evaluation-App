@@ -95,7 +95,7 @@ if st.button("🚀 Submit All", use_container_width=True):
             
             df.to_csv(DATA_FILE, index=False)
             
-            st.balloons(6)
+            st.balloons()
             st.success("🎉 SUBMISSION SUCCESSFUL! Your evaluations have been recorded.")
             
             time.sleep(3)
