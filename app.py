@@ -51,8 +51,12 @@ col1, col2 = st.columns(2)
 with col1:
     my_id = st.text_input("Your Student ID (Evaluator)").strip()
 with col2:
-    group_no = st.selectbox("Your Group No.", list(GROUP_TOPICS.keys()))
-    st.success(f"Selected Topic: **{GROUP_TOPICS[group_no]}**")
+    group_options = ["-- Select your group --"] + list(GROUP_TOPICS.keys())
+    group_no = st.selectbox("Your Group No.", options=group_options, index=0)
+    if group_no != "-- Select your group --":
+        st.success(f"Selected Topic: **{GROUP_TOPICS[group_no]}**")
+    else:
+        st.info("Please select your group to see the topic.")
 
 # 7. Step 2: Evaluation Details
 st.write("---")
@@ -88,6 +92,11 @@ st.write("---")
 if st.button("🚀 Final Submit", use_container_width=True):
     df = load_data()
     
+    if not my_id:
+        st.error("Please enter Your Student ID!")
+    elif group_no == "-- Select your group --":
+        st.error("Please select your Group Number before submitting!")
+        
     already_submitted = False
     if not df.empty and my_id in df['Evaluator_ID'].values:
         already_submitted = True
