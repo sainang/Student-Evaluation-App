@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
+import time  
 
 # 1. Basic Config
 st.set_page_config(page_title="Peer Evaluation", page_icon="👥", layout="wide")
@@ -93,10 +94,15 @@ if st.button("🚀 Submit All", use_container_width=True):
                     mask = (df['Evaluator_ID'] == my_id) & (df['Groupmembers_ID'] == e['id'])
                     df = df[~mask]
                 df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
+            
+            # 保存到 CSV
             df.to_csv(DATA_FILE, index=False)
-            st.balloons()
-            st.success("Submitted! Restarting...")
-            st.rerun()
+            
+            st.balloons() 
+            st.success("Submitted successfully! The page will refresh in 3 seconds.")
+            
+            time.sleep(3) 
+            st.rerun()     
 
 # 9. Admin Dashboard
 st.write("---")
