@@ -7,7 +7,7 @@ import os
 st.set_page_config(page_title="Peer Evaluation", page_icon="👥", layout="wide")
 
 # --- 管理员密码 ---
-ADMIN_PASSWORD = "YourNewSecurePassword789" 
+ADMIN_PASSWORD = "123321" 
 
 # --- 小组与主题对应表 ---
 GROUP_TOPICS = {
