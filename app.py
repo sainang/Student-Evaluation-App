@@ -80,11 +80,11 @@ for i in range(int(num)):
         
         total = sum(scores.values())
         if total <= 50:
-            st.error(f"**Current Total: {total}/100** ⚠️ (Remark and justification are REQUIRED for scores ≤ 50!)")
+            st.error(f"**Current Total Scores: {total}/100** ⚠️ (Remark and justification are REQUIRED for Total Scores ≤ 50!)")
         else:
-            st.success(f"**Total: {total}/100**")
+            st.success(f"**Total Scores: {total}/100**")
         
-        remark = st.text_area(f"Remarks for {label}", key=f"r_{i}", placeholder="If score is ≤ 50, explain WHY here (mandatory).")
+        remark = st.text_area(f"Remarks for {label}", key=f"r_{i}", placeholder="If Someone's Total Score is ≤ 50, explain WHY here (mandatory).")
         all_evals.append({"id": t_id, "scores": scores, "total": total, "remark": remark})
 
 # 8. Step 3: Submission Logic (With Duplicate ID Check)
