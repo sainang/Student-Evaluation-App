@@ -56,14 +56,14 @@ num_members = st.number_input("How many group members (including yourself) are y
 all_evaluations = []
 for i in range(int(num_members)):
     is_self = (i == 0)
-    # Updated label text
+    # 更新后的标签文案
     section_label = f"Member #{i+1} (Your Self-Evaluation)" if is_self else f"Member #{i+1} (Teammate Evaluation)"
     
     with st.expander(section_label, expanded=True):
-        # Updated input label
+        # 更新后的输入框标签
         t_id = st.text_input(f"Student ID for {section_label}", key=f"id_{i}").strip() 
         
-        # Updated scoring header
+        # 更新后的评分标题
         st.write("Criteria Scoring (0-20):")
         c_scores = {}
         cols = st.columns(5)
@@ -74,7 +74,7 @@ for i in range(int(num_members)):
         
         member_total = sum(c_scores.values())
         
-        # Updated "Current Total" and conditional warning message
+        # 更新为 "Current Total" 及其强制备注逻辑
         if member_total <= 50:
             st.error(f"**Current Total: {member_total}/100** (Remark and justification are required for scores ≤ 50! ⚠️)")
         else:
